@@ -1,9 +1,12 @@
-from ._memory.memory_persistence import MemoryPersistence
-from ._mongodb.mongodb_persistence import MongoPersistence
-from ._redis.redis_persistence import RedisPersistence
+from ._memory._roomrepository import MemoryRoomRepository
+from ._memory._userrepository import MemoryUserRepository
+
+from ._mongodb._roomrepository import MongoRoomRepository
+from ._mongodb._userrepository import MongoUserRepository
 
 __all__ = [
-    "MemoryPersistence", 
-    "MongoPersistence",
-    "RedisPersistence"
-    ]
+    "MemoryRoomRepository",
+    "MemoryUserRepository", 
+    "MongoRoomRepository",
+    "MongoUserRepository"
+]
