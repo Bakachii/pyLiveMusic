@@ -2,8 +2,8 @@ from aiohttp import web
 
 from pyLiveMusic.storage import Memory
 
-from pyLiveMusic._utils._state import AppState
 from pyLiveMusic._utils._app import create_app
+from pyLiveMusic._utils._state import AppState
 from pyLiveMusic._utils.auth import Authentication
 
 class pyLiveMusic:

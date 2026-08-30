@@ -16,27 +16,16 @@ from pyLiveMusic.persistence import (
     MongoUserRepository
 )
 
-class AppState:
 
-    
-    def __init__(self, storage):
+class _core_state:
+
+    def __init__(self):
+
         self.rooms = None
         self.storage = None
         self.users = None
         self.room_repository = None
-
-        if isinstance(storage, Memory):
-            self.MemoryState()
-
-        elif isinstance(storage, MongoDB):
-            self.MongoDBState(storage)
-
-        elif isinstance(storage, Redis):
-            self.RedisState(storage)
-
-        else:
-            raise TypeError("Unsupported storage type")
-
+    
     def MemoryState(self):
         self.rooms = RoomManager()
         self.storage = _MemoryStorage()
@@ -59,3 +48,26 @@ class AppState:
         self.storage = None
         self.users = None
         self.room_repository = None
+    
+    
+class AppState:
+
+    def __init__(self, storage):
+        state_container = _core_state()
+
+        if isinstance(storage, Memory):
+            state_container.MemoryState()
+
+        elif isinstance(storage, MongoDB):
+            state_container.MongoDBState(storage)
+
+        elif isinstance(storage, Redis):
+            state_container.RedisState(storage)
+
+        else:
+            raise TypeError("Unsupported storage type")
+
+        self.rooms = state_container.rooms
+        self.storage = state_container.storage
+        self.users = state_container.users
+        self.room_repository = state_container.room_repository
