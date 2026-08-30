@@ -1,8 +1,12 @@
 from pyLiveMusic._webrtc.backend import RoomManager
 
 from pyLiveMusic.storage import (
+    Memory,
+    MongoDB,
+    Redis,
     _MemoryStorage, 
-    _MongoStorage
+    _MongoStorage,
+    _RedisStorage,
 )
 
 from pyLiveMusic.persistence import (
@@ -16,9 +20,8 @@ class AppState:
 
     
     def __init__(self, storage):
-
-        self.storage = None
         self.rooms = None
+        self.storage = None
         self.users = None
         self.room_repository = None
 
@@ -35,19 +38,24 @@ class AppState:
             raise TypeError("Unsupported storage type")
 
     def MemoryState(self):
-        self.storage = _MemoryStorage()
         self.rooms = RoomManager()
+        self.storage = _MemoryStorage()
         self.users = MemoryUserRepository()
         self.room_repository = MemoryRoomRepository()
 
     def MongoDBState(self, storage): 
-        self.storage = _MongoStorage(self, storage)
         self.rooms = RoomManager()
-        self.users = MongoUserRepository()
-        self.room_repository = MongoRoomRepository()
+        self.storage = _MongoStorage(
+            storage.db_url, 
+            storage.db_name,
+            storage.user_collection, 
+            storage.room_collection
+        )
+        self.users = MongoUserRepository(storage.user_collection)
+        self.room_repository = MongoRoomRepository(storage.room_collection)
 
     def RedisState(self, storage):
-        self.storage = None
         self.rooms = None
+        self.storage = None
         self.users = None
         self.room_repository = None

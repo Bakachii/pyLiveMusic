@@ -1,7 +1,7 @@
 from aiortc import RTCPeerConnection
 from aiortc.contrib.media import MediaRelay
 
-from pyLiveMusic._settings import QUALITY_BITRATES
+from pyLiveMusic._utils._settings import QUALITY_BITRATES
 
 
 class Peer:

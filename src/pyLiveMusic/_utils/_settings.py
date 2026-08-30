@@ -18,6 +18,6 @@ FRAME_SAMPLES = 960
 # Room is deleted 60 seconds after its queue becomes empty.
 ROOM_DELETE_DELAY = 60
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 STATIC_DIR = BASE_DIR / "_static"

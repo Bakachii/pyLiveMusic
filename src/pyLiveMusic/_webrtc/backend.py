@@ -6,11 +6,10 @@ from dataclasses import dataclass
 from aiortc import RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
 
+from pyLiveMusic._utils._settings import ROOM_DELETE_DELAY
 
 from .peer import Peer
 from .audio import RoomAudioTrack
-
-from .._settings import ROOM_DELETE_DELAY
 
 
 @dataclass
