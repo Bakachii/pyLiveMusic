@@ -1,20 +1,13 @@
 class MemoryRoomRepository:
 
-    def __init__(self):
+    def __init__(self, rooms):
+        self.rooms = rooms
 
-        self.rooms = {}
-
-    async def create(
-        self,
-        room_id,
-        name,
-        controllers,
-    ):
-
+    async def create(self, room_id, name, controllers):
         document = {
             "_id": room_id,
             "name": name,
-            "controllers": controllers,
+            "controllers": controllers
         }
 
         self.rooms[room_id] = document

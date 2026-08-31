@@ -454,10 +454,11 @@ class Room:
         self.peers.clear()
         await self.audio.close()
 
-
 class RoomManager:
-    def __init__(self):
+
+    def __init__(self, repository):
         self.rooms = {}
+        self.repository = repository
 
     async def start(self):
         print("Room manager started")
@@ -470,6 +471,7 @@ class RoomManager:
 
     async def create(self, name, controllers):
         room_id = uuid.uuid4().hex[:12]
+
         room = Room(
             room_id,
             name,
@@ -479,15 +481,21 @@ class RoomManager:
 
         self.rooms[room_id] = room
 
-        return room
+        await self.repository.create(
+            room_id=room_id,
+            name=name,
+            controllers=controllers,
+        )
 
+        return room
 
     def get(self, room_id):
         return self.rooms.get(room_id)
-
 
     async def remove(self, room_id):
         room = self.rooms.pop(room_id, None)
 
         if room:
             await room.end()
+
+        await self.repository.delete(room_id)

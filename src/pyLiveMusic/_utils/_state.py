@@ -25,23 +25,23 @@ class _core_state:
         self.storage = None
         self.users = None
         self.room_repository = None
-    
-    def MemoryState(self):
-        self.rooms = RoomManager()
-        self.storage = _MemoryStorage()
-        self.users = MemoryUserRepository()
-        self.room_repository = MemoryRoomRepository()
 
-    def MongoDBState(self, storage): 
-        self.rooms = RoomManager()
+    def MemoryState(self, storage):
+        self.storage = storage.storage
+        self.rooms = RoomManager(self.room_repository)
+        self.users = MemoryUserRepository(self.storage.users)
+        self.room_repository = MemoryRoomRepository(self.storage.rooms)
+
+    def MongoDBState(self, storage):
         self.storage = _MongoStorage(
-            storage.db_url, 
+            storage.db_url,
             storage.db_name,
-            storage.user_collection, 
-            storage.room_collection
+            storage.user_collection,
+            storage.room_collection,
         )
-        self.users = MongoUserRepository(storage.user_collection)
-        self.room_repository = MongoRoomRepository(storage.room_collection)
+        self.users = MongoUserRepository(self.storage.users)
+        self.room_repository = MongoRoomRepository(self.storage.rooms)
+        self.rooms = RoomManager(self.room_repository)
 
     def RedisState(self, storage):
         self.rooms = None
@@ -56,7 +56,7 @@ class AppState:
         state_container = _core_state()
 
         if isinstance(storage, Memory):
-            state_container.MemoryState()
+            state_container.MemoryState(storage)
 
         elif isinstance(storage, MongoDB):
             state_container.MongoDBState(storage)

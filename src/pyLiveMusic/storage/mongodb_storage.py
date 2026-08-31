@@ -17,19 +17,19 @@ class MongoDB:
 
 class _MongoStorage:
     def __init__(
-        self, 
-        db_url: str, 
+        self,
+        db_url: str,
         db_name: str,
-        user_collection: str, 
+        user_collection: str,
         room_collection: str
-        ): 
-
+    ):
         self.client = AsyncMongoClient(db_url)
         self.storage = self.client[db_name]
 
-        self.users = self.storage[room_collection]
-        self.rooms = self.storage[user_collection]
+        self.users = self.storage[user_collection]
+        self.rooms = self.storage[room_collection]
 
+        
     async def connect(self):
         await self.client.admin.command("ping")
         print("MongoDB connected")
