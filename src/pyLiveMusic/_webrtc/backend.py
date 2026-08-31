@@ -454,14 +454,31 @@ class Room:
         self.peers.clear()
         await self.audio.close()
 
-class RoomManager:
 
+class RoomManager:
     def __init__(self, repository):
         self.rooms = {}
         self.repository = repository
 
     async def start(self):
-        print("Room manager started")
+        documents = await self.repository.list()
+
+        for document in documents:
+            room_id = document["_id"]
+
+            if room_id in self.rooms:
+                continue
+
+            room = Room(
+                room_id,
+                document.get("name", "Private Room"),
+                document.get("controllers", []),
+                self.remove,
+            )
+
+            self.rooms[room_id] = room
+
+        print(f"Room manager started ({len(self.rooms)} rooms loaded)")
 
     async def shutdown(self):
         for room in list(self.rooms.values()):
@@ -481,11 +498,16 @@ class RoomManager:
 
         self.rooms[room_id] = room
 
-        await self.repository.create(
-            room_id=room_id,
-            name=name,
-            controllers=controllers,
-        )
+        try:
+            await self.repository.create(
+                room_id=room_id,
+                name=name,
+                controllers=controllers,
+            )
+        except Exception:
+            self.rooms.pop(room_id, None)
+            await room.end()
+            raise
 
         return room
 

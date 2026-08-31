@@ -7,15 +7,17 @@ class MemoryRoomRepository:
         document = {
             "_id": room_id,
             "name": name,
-            "controllers": controllers
+            "controllers": list(controllers),
         }
 
         self.rooms[room_id] = document
-
         return document
 
     async def get(self, room_id):
         return self.rooms.get(room_id)
+
+    async def list(self):
+        return list(self.rooms.values())
 
     async def delete(self, room_id):
         self.rooms.pop(room_id, None)
