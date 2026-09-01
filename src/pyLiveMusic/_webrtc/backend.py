@@ -305,6 +305,8 @@ class Room:
             "low",
             "medium",
             "high",
+            "highest",
+            "peak",
         }:
 
             raise ValueError("INVALID_AUDIO_QUALITY")
@@ -478,7 +480,7 @@ class RoomManager:
 
             self.rooms[room_id] = room
 
-        print(f"Room manager started ({len(self.rooms)} rooms loaded)")
+        print(f"Room manager started")
 
     async def shutdown(self):
         for room in list(self.rooms.values()):

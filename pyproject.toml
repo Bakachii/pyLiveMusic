@@ -20,10 +20,22 @@ authors = [
 dependencies = [
     "aiortc>=1.15.0",
     "aiohttp>=3.14.3",
-    "pymongo>=4.17.0",
     "numpy>=2.5.2"
 ]
 
+[project.optional-dependencies]
+
+mongo = [
+    "pymongo>=4.17.0",
+]
+
+redis = [
+    "redis>=8.1.0",
+]
+
+all = [
+    "pyLiveMusic[mongo,redis]",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

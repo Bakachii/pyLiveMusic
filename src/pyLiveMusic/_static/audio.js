@@ -4,6 +4,7 @@ const status = document.getElementById("status");
 
 const roomId = window.location.pathname.split("/").filter(Boolean).pop();
 
+
 let peerConnection = null;
 let serverPosition = 0;
 let lastAllowedPosition = 0;
@@ -196,28 +197,42 @@ function waitForIceGathering() {
 
 
 // Server position
-//
-// This can later be updated from GET /state.
-
 async function updateServerPosition() {
     try {
         const response = await fetch(`/api/rooms/${roomId}`);
+
+        if (response.status === 404) {
+            console.error(`[ROOM] Room ${roomId} does not exist`);
+            status.textContent = "ROOM NOT FOUND";
+            return false;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                `Room request failed: ${response.status}`
+            );
+        }
+
         const data = await response.json();
 
         if (data.error === "NOT_PLAYING_ANYTHING_CURRENTLY") {
-            status.textContent = "NOT_PLAYING_ANYTHING_CURRENTLY";
-            return;
+            status.textContent = "NOT PLAYING";
+            return true;
         }
 
         if (typeof data.position === "number") {
             serverPosition = data.position;
             lastAllowedPosition = data.position;
         }
+
+        return true;
+
     } catch (error) {
         console.error("Could not get room state:", error);
+        status.textContent = "ROOM ERROR";
+        return false;
     }
 }
-
 
 // Keep browser playback rate at normal speed
 
@@ -228,15 +243,29 @@ setInterval(() => {
 }, 500);
 
 
-// Initialize
+let stateInterval = null;
 
-connectWebRTC().catch((error) => {
-    console.error("[WEBRTC] Connection failed:", error);
-    status.textContent = "WEBRTC_FAILED";
-});
+async function initialize() {
+    if (!roomId) {
+        status.textContent = "INVALID ROOM";
+        return;
+    }
 
+    const exists = await updateServerPosition();
 
-// Update server position periodically.
-// This is read-only; it does not control the room.
+    if (!exists) {
+        return;
+    }
 
-setInterval(updateServerPosition, 2000);
+    try {
+        await connectWebRTC();
+    } catch (error) {
+        console.error("[WEBRTC] Connection failed:", error);
+        status.textContent = "WEBRTC_FAILED";
+        return;
+    }
+
+    stateInterval = setInterval(updateServerPosition, 2000);
+}
+
+initialize();
