@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "pyLiveMusic"
+version = "0.1.0"
+description = "A python framework for creating private room for live streaming audio using webrtc."
+readme = "README.md"
+requires-python = ">=3.10, <=3.14.7"
+
+license = "MIT"
+license-files = ["LICENSE"]
+
+authors = [
+    { name = "Bakachii" }
+]
+
+dependencies = [
+    "aiortc>=1.15.0",
+    "aiohttp>=3.14.3",
+    "numpy>=2.5.2"
+]
+
+[project.optional-dependencies]
+
+mongo = [
+    "pymongo>=4.17.0",
+]
+
+redis = [
+    "redis>=8.1.0",
+]
+
+all = [
+    "pyLiveMusic[mongo,redis]",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[tool.setuptools.package-data]
+pyLiveMusic = ["_static/*.html", "_static/*.js"]
+
+
+[project.urls]
+Homepage = "https://github.com/Bakachii/pyLiveMusic"
+Repository = "https://github.com/Bakachii/pyLiveMusic"
+Issues = "https://github.com/Bakachii/pyLiveMusic/issues"
