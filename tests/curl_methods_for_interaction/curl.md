@@ -358,7 +358,7 @@ high
 highest
 peak
 ```
-
+ 
 ## Low quality | 48 kbps
 
 ```bash

@@ -1,21 +1,6 @@
-from pymongo import AsyncMongoClient
-
-class MongoDB:
-    def __init__(
-        self, 
-        db_url: str | None = None, 
-        db_name: str | None = None,
-        user_collection: str | None = None, 
-        room_collection: str | None = None,
-        ):
-
-        self.db_url = db_url
-        self.db_name = db_name or "MongoStorage"
-        self.user_collection = user_collection or 'users'
-        self.room_collection = room_collection or 'rooms'
-
-
 class _MongoStorage:
+    from pymongo import AsyncMongoClient
+    
     def __init__(
         self,
         db_url: str,
@@ -23,6 +8,13 @@ class _MongoStorage:
         user_collection: str,
         room_collection: str
     ):
+        try:
+            from pymongo import AsyncMongoClient
+        except ImportError as exc:
+            raise ImportError(
+                "To use the MongoDB, you must install pyLiveMusic via "
+                "pip install 'pyLiveMusic[mongo]'"
+            ) from exc
         self.client = AsyncMongoClient(db_url)
         self.storage = self.client[db_name]
 
