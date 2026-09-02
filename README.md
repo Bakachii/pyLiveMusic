@@ -8,9 +8,9 @@ pip install -U pyLiveMusic
 
 # Setup
 ```python
-from pyLiveMusic import pyLiveMusic
+from pyLiveMusic import Client
 
-server = pyLiveMusic(
+server = Client(
     HOST="0.0.0.0",
     PORT=5000,
     AUTH_KEY="124",
