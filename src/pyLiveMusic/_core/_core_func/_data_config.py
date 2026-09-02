@@ -1,4 +1,4 @@
-from pyLiveMusic._webrtc.backend import RoomManager
+from pyLiveMusic._core._core_engine._webrtc.backend import RoomManager
 
 from pyLiveMusic._core._database.mongo._storage import _MongoStorage
 from pyLiveMusic._core._database.mongo._repo import MongoRoomRepository, MongoUserRepository

@@ -1,13 +1,9 @@
-from aiohttp import web
-
 from pyLiveMusic.storage.memory import Memory
 
-from pyLiveMusic._utils._app import create_app
-from pyLiveMusic._utils.auth import Authentication
-from pyLiveMusic._core._core_func._state._data_state import _data_state
+from pyLiveMusic._core._aiohttp._app import _start
+from pyLiveMusic._core._core_func._auth._auth import Authentication
 
-
-class pyLiveMusic:
+class Client:
 
     def __init__(
         self,
@@ -23,15 +19,6 @@ class pyLiveMusic:
 
         self.storage = STORAGE if STORAGE is not None else Memory()
     
-
+ 
     def start(self):
-        app = create_app(
-            auth=self.auth, 
-            state=_data_state(self.storage)
-        )
-
-        web.run_app(
-            app, 
-            host=self.host, 
-            port=self.port
-        )
+        _start(host=self.host, port=self.port, auth=self.auth, storage=self.storage)
