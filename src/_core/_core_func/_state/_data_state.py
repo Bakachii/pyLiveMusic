@@ -1,4 +1,4 @@
-from pyLiveMusic._core._core_func._data_config import _core_state
+from _core._core_func._data_config import _core_state
 
 from pyLiveMusic.storage import Memory, MongoDB, Redis
 

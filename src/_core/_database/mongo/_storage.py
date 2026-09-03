@@ -6,7 +6,7 @@ class _MongoStorage:
         db_url: str,
         db_name: str,
         user_collection: str,
-        room_collection: str
+        room_collection: str,
     ):
         try:
             from pymongo import AsyncMongoClient
