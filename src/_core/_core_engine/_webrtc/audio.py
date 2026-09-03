@@ -8,7 +8,7 @@ from fractions import Fraction
 
 from aiortc import MediaStreamTrack
 
-from pyLiveMusic._utils._settings import  SAMPLE_RATE, FRAME_SAMPLES
+from _utils._settings import  SAMPLE_RATE, FRAME_SAMPLES
 
 
 TIME_BASE = Fraction(1, SAMPLE_RATE)

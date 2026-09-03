@@ -1,7 +1,7 @@
 from aiohttp import web
 
 
-from pyLiveMusic._api._errors import json_error
+from _api._errors import json_error
 
 
 def get_room(request):

@@ -1,8 +1,10 @@
-from pyLiveMusic._core._core_engine._webrtc.backend import RoomManager
+from _core._core_engine._webrtc.backend import RoomManager
 
-from pyLiveMusic._core._database.mongo._storage import _MongoStorage
-from pyLiveMusic._core._database.mongo._repo import MongoRoomRepository, MongoUserRepository
-from pyLiveMusic._core._database.memory._repo import MemoryRoomRepository, MemoryUserRepository
+from _core._database.mongo._storage import _MongoStorage
+from _core._database.redis._storage import _RedisStorage
+from _core._database.mongo._repo import MongoRoomRepository, MongoUserRepository
+from _core._database.memory._repo import MemoryRoomRepository, MemoryUserRepository
+from _core._database.redis._repo import RedisRoomRepository, RedisUserRepository
 
 
 class _core_state:
@@ -31,4 +33,11 @@ class _core_state:
         self.rooms = RoomManager(self.room_repository)
 
     def RedisState(self, storage):
-        raise NotImplementedError("Redis storage is not implemented yet")
+        self.storage = _RedisStorage(
+            storage.db_url,
+            storage.db,
+            storage.key_prefix,
+        )
+        self.users = RedisUserRepository(self.storage.client, self.storage.key_prefix)
+        self.room_repository = RedisRoomRepository(self.storage.client, self.storage.key_prefix)
+        self.rooms = RoomManager(self.room_repository)

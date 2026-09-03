@@ -1,7 +1,7 @@
 from pyLiveMusic.storage.memory import Memory
 
-from pyLiveMusic._core._aiohttp._app import _start
-from pyLiveMusic._core._core_func._auth._auth import Authentication
+from _core._aiohttp._app import _start
+from _core._core_func._auth._auth import Authentication
 
 class Client:
 

@@ -1,4 +1,4 @@
-from pyLiveMusic._core._database.memory._storage import _MemoryStorage
+from _core._database.memory._storage import _MemoryStorage
 
 class Memory:
     def __init__(self):

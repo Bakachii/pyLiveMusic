@@ -1,19 +1,19 @@
 from aiohttp import web
 
-from pyLiveMusic._api._routes import (
+from _api._routes import (
     queue,
     rooms,
     webrtc,
     frontend,
     playback,
 )
-from pyLiveMusic._api.rooms import (
+from _api.rooms import (
     create_room,
     end_room,
     get_room,
 )
 
-from pyLiveMusic._api.playback import (
+from _api.playback import (
     pause,
     resume,
     skip,
@@ -27,16 +27,16 @@ from pyLiveMusic._api.playback import (
     quality,
 )
 
-from pyLiveMusic._api.queue import (
+from _api.queue import (
     get_queue,
     add_track,
     remove_track,
     clear_queue,
 )
 
-from pyLiveMusic._utils._settings import STATIC_DIR
-from pyLiveMusic._core._core_engine._webrtc.signaling import offer
-from pyLiveMusic._core._core_func._state._data_state import _data_state
+from _utils._settings import STATIC_DIR
+from _core._core_engine._webrtc.signaling import offer
+from _core._core_func._state._data_state import _data_state
 
 
 async def on_startup(app):
