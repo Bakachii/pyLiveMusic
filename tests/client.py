@@ -1,6 +1,6 @@
-from pyLiveMusic import Client
+import asyncio
 
-server = Client() # Create and configure the pyLiveMusic server.
+from pyLiveMusic import Client
 
 """
 Client configuration:
@@ -32,4 +32,17 @@ If no configuration is provided, pyLiveMusic will use:
     STORAGE  -> Memory
 """
 
-server.start() # Start the pyLiveMusic server.
+async def main():
+    # Initialize the client with host and port
+    server = Client(HOST="0.0.0.0", PORT=8000)
+    
+    try:
+        await server.start() # Start the server after configuring credentials
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass

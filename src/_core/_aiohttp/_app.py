@@ -1,3 +1,5 @@
+import signal
+import asyncio
 from aiohttp import web
 
 from _api._routes import (
@@ -105,6 +107,28 @@ def create_app(auth, state):
 
     return app
 
-def _start(host, port, auth, storage):
+
+async def _start(host, port, auth, storage):
     app = create_app(auth=auth, state=_data_state(storage))
-    web.run_app(app, host=host, port=port)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    site = web.TCPSite(runner, host, port)
+    await site.start()
+    
+    print(f"Server started on http://{host}:{port}")
+    
+    loop = asyncio.get_running_loop()
+    exit_event = asyncio.Event()
+    
+    def signal_handler():
+        exit_event.set()
+        
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, signal_handler)
+        
+    try:
+        await exit_event.wait()
+    finally:
+        await runner.cleanup()
