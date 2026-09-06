@@ -19,6 +19,8 @@ FRAME_SAMPLES = 960
 ROOM_DELETE_DELAY = 60
 
 
-# Path for _static folder
-BASE_DIR = Path(__file__).resolve().parents[2]
-STATIC_DIR = BASE_DIR / "_static"
+STATIC_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "pyLiveMusic"
+    / "_static"
+)

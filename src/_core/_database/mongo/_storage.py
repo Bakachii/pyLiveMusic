@@ -1,6 +1,4 @@
 class _MongoStorage:
-    from pymongo import AsyncMongoClient
-    
     def __init__(
         self,
         db_url: str,
