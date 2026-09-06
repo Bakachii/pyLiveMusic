@@ -14,7 +14,7 @@ class Room:
         room_id: str | None = None,
     ):
         data = {"name": name}
-
+ 
         if room_id is not None:
             data["room_id"] = room_id
 
