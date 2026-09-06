@@ -457,6 +457,7 @@ class Room:
         await self.audio.close()
 
 
+
 class RoomManager:
     def __init__(self, repository):
         self.rooms = {}
@@ -480,7 +481,7 @@ class RoomManager:
 
             self.rooms[room_id] = room
 
-        print(f"Room manager started")
+        print("Room manager started")
 
     async def shutdown(self):
         for room in list(self.rooms.values()):
@@ -488,8 +489,20 @@ class RoomManager:
 
         self.rooms.clear()
 
-    async def create(self, name, controllers):
-        room_id = uuid.uuid4().hex[:12]
+    async def create(
+        self,
+        name,
+        controllers,
+        room_id=None,
+    ):
+        # Generate an ID if the user didn't provide one
+        room_id = room_id or uuid.uuid4().hex[:12]
+
+        # Don't allow duplicate active rooms
+        if room_id in self.rooms:
+            raise ValueError(
+                f"Room '{room_id}' already exists."
+            )
 
         room = Room(
             room_id,

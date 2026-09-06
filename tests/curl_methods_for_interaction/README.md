@@ -1,30 +1,32 @@
 # pyLiveMusic API — cURL Reference
 
-This document contains the available HTTP API commands for testing `pyLiveMusic`.
+This document provides examples for interacting with the `pyLiveMusic` HTTP API using `curl`.
 
 ## Server
 
-Default server:
+By default, the server runs at:
 
 ```text
 http://localhost:8000
 ```
 
-Authentication:
+### Authentication
+
+Authenticated endpoints require a Bearer token:
 
 ```text
-Authorization: Bearer key
+Authorization: Bearer <key>
 ```
 
-> Replace `key` with the authentication key printed by your server.
+Replace `<key>` with the authentication key printed when the server starts.
 
 ---
 
-# 1. Room API
+# 1. Rooms
 
 ## Create a room
 
-Creates a new live room and persists its room data through the configured repository.
+Creates a new live room and persists its room metadata using the configured repository.
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms \
@@ -58,8 +60,6 @@ Save the returned room ID:
 ROOM_ID="bdf36a19a0a9"
 ```
 
----
-
 ## Get a room
 
 Returns the current live runtime state of a room.
@@ -68,13 +68,6 @@ Returns the current live runtime state of a room.
 curl http://localhost:8000/api/rooms/$ROOM_ID
 ```
 
-Or directly:
-
-```bash
-curl http://localhost:8000/api/rooms/bdf36a19a0a9
-```
-
----
 
 ## End a room
 
@@ -95,15 +88,17 @@ Example response:
 
 ---
 
-# 2. Queue API
+# 2. Queue
 
 ## Get the queue
+
+Returns the current track and queued tracks for a room.
 
 ```bash
 curl http://localhost:8000/api/rooms/$ROOM_ID/queue
 ```
 
-Example:
+Example response:
 
 ```json
 {
@@ -116,11 +111,9 @@ Example:
 }
 ```
 
----
-
 ## Add a track
 
-Add an audio file to the room queue.
+Adds an audio file to the room queue.
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/queue/add \
@@ -128,7 +121,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/queue/add \
   -H "Content-Type: application/json" \
   -d '{
     "title": "My Song",
-    "path": "/home/bakachii/stuffs/codes/python/pyLiveMusic/audio.mp3"
+    "path": "/path/to/audio/audio.mp3"
   }'
 ```
 
@@ -147,9 +140,7 @@ Save the returned track ID:
 TRACK_ID="8d2d..."
 ```
 
-> If there is no current track, the first added track may start playing immediately instead of remaining only in the queue.
-
----
+> If there is no currently playing track, the first track added may start playing immediately instead of remaining only in the queue.
 
 ## Remove a queued track
 
@@ -167,8 +158,6 @@ curl -X POST http://localhost:8000/api/rooms/bdf36a19a0a9/queue/8d2d1234/remove 
 
 > This endpoint removes a queued item. It is not intended to remove the currently playing track.
 
----
-
 ## Clear the queue
 
 ```bash
@@ -178,25 +167,25 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/queue/clear \
 
 ---
 
-# 3. Playback API
+# 3. Playback
 
 ## Pause
+
+Pauses the current track.
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/pause \
   -H "Authorization: Bearer 124"
 ```
 
----
-
 ## Resume
+
+Resumes playback.
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/resume \
   -H "Authorization: Bearer 124"
 ```
-
----
 
 ## Skip
 
@@ -211,7 +200,11 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/skip \
 
 # 4. Volume
 
-Volume is represented as a value from `0` to `1`.
+Volume is represented as a value between `0` and `1`.
+
+* `0` — muted
+* `0.5` — 50%
+* `1.0` — 100%
 
 ## 50% volume
 
@@ -303,7 +296,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/repeat \
 
 ---
 
-# 7. Playback order
+# 7. Playback Order
 
 ## Ascending
 
@@ -349,7 +342,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/seek/back \
 
 # 9. Audio Quality
 
-Supported values:
+Supported quality levels:
 
 ```text
 low
@@ -358,8 +351,8 @@ high
 highest
 peak
 ```
- 
-## Low quality | 48 kbps
+
+## Low — 48 kbps
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
@@ -368,7 +361,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
   -d '{"quality":"low"}'
 ```
 
-## Medium quality | 96 kbps
+## Medium — 96 kbps
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
@@ -377,7 +370,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
   -d '{"quality":"medium"}'
 ```
 
-## High quality | 128 kbps
+## High — 128 kbps
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
@@ -386,8 +379,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
   -d '{"quality":"high"}'
 ```
 
-
-## Highest quality | 256 kbps
+## Highest — 256 kbps
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
@@ -396,8 +388,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
   -d '{"quality":"highest"}'
 ```
 
-
-## Peak quality | 320 kbps
+## Peak — 320 kbps
 
 ```bash
 curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
@@ -410,7 +401,7 @@ curl -X POST http://localhost:8000/api/rooms/$ROOM_ID/quality \
 
 # 10. WebRTC
 
-The WebRTC signaling endpoint is used by the browser/client to establish a WebRTC audio connection.
+The WebRTC signaling endpoint is used by the browser or client to establish a WebRTC audio connection.
 
 ## WebRTC offer
 
@@ -418,7 +409,7 @@ The WebRTC signaling endpoint is used by the browser/client to establish a WebRT
 POST /api/rooms/{room_id}/webrtc/offer
 ```
 
-The request body contains the SDP offer generated by an actual WebRTC peer:
+The request body contains the SDP offer generated by the WebRTC peer:
 
 ```json
 {
@@ -427,11 +418,13 @@ The request body contains the SDP offer generated by an actual WebRTC peer:
 }
 ```
 
-Open the room in the browser:
+Open the room in a browser:
 
 ```text
 http://localhost:8000/room/$ROOM_ID
 ```
+
+> WebRTC signaling is normally handled by the browser or client rather than manually with `curl`.
 
 ---
 
@@ -449,38 +442,30 @@ http://localhost:8000/
 http://localhost:8000/room/$ROOM_ID
 ```
 
-Example:
-
-```text
-http://localhost:8000/room/bdf36a19a0a9
-```
-
 ---
 
-# 12. Endpoints
+# 12. Endpoint Reference
 
-| Method | Endpoint | Auth |
-|---|---|---|
-| `POST` | `/api/rooms` | Yes |
-| `GET` | `/api/rooms/{room_id}` | No |
-| `POST` | `/api/rooms/{room_id}/end` | Yes |
-| `GET` | `/api/rooms/{room_id}/queue` | No |
-| `POST` | `/api/rooms/{room_id}/queue/add` | Yes |
-| `POST` | `/api/rooms/{room_id}/queue/{track_id}/remove` | Yes |
-| `POST` | `/api/rooms/{room_id}/queue/clear` | Yes |
-| `POST` | `/api/rooms/{room_id}/pause` | Yes |
-| `POST` | `/api/rooms/{room_id}/resume` | Yes |
-| `POST` | `/api/rooms/{room_id}/skip` | Yes |
-| `POST` | `/api/rooms/{room_id}/volume` | Yes |
-| `POST` | `/api/rooms/{room_id}/shuffle` | Yes |
-| `POST` | `/api/rooms/{room_id}/repeat` | Yes |
-| `POST` | `/api/rooms/{room_id}/order/ascending` | Yes |
-| `POST` | `/api/rooms/{room_id}/order/descending` | Yes |
-| `POST` | `/api/rooms/{room_id}/seek/front` | Yes |
-| `POST` | `/api/rooms/{room_id}/seek/back` | Yes |
-| `POST` | `/api/rooms/{room_id}/quality` | Yes |
-| `POST` | `/api/rooms/{room_id}/webrtc/offer` | No* |
+| Method | Endpoint                                       | Authentication |
+| ------ | ---------------------------------------------- | -------------- |
+| `POST` | `/api/rooms`                                   | Yes            |
+| `GET`  | `/api/rooms/{room_id}`                         | No             |
+| `POST` | `/api/rooms/{room_id}/end`                     | Yes            |
+| `GET`  | `/api/rooms/{room_id}/queue`                   | No             |
+| `POST` | `/api/rooms/{room_id}/queue/add`               | Yes            |
+| `POST` | `/api/rooms/{room_id}/queue/{track_id}/remove` | Yes            |
+| `POST` | `/api/rooms/{room_id}/queue/clear`             | Yes            |
+| `POST` | `/api/rooms/{room_id}/pause`                   | Yes            |
+| `POST` | `/api/rooms/{room_id}/resume`                  | Yes            |
+| `POST` | `/api/rooms/{room_id}/skip`                    | Yes            |
+| `POST` | `/api/rooms/{room_id}/volume`                  | Yes            |
+| `POST` | `/api/rooms/{room_id}/shuffle`                 | Yes            |
+| `POST` | `/api/rooms/{room_id}/repeat`                  | Yes            |
+| `POST` | `/api/rooms/{room_id}/order/ascending`         | Yes            |
+| `POST` | `/api/rooms/{room_id}/order/descending`        | Yes            |
+| `POST` | `/api/rooms/{room_id}/seek/front`              | Yes            |
+| `POST` | `/api/rooms/{room_id}/seek/back`               | Yes            |
+| `POST` | `/api/rooms/{room_id}/quality`                 | Yes            |
+| `POST` | `/api/rooms/{room_id}/webrtc/offer`            | No*            |
 
-\* WebRTC signaling is normally called by the browser/client rather than manually through `curl`.
-
----
+* WebRTC signaling is normally handled by the browser or client rather than manually through `curl`.
