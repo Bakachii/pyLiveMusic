@@ -17,6 +17,7 @@ async def main():
     client = Client()
     try:
         await client.start()
+        await client.run_until_disconnect()
     finally:
         await client.stop()
 
