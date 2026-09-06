@@ -8,13 +8,19 @@ pip install -U pyLiveMusic
 
 # Setup
 ```python
+import asyncio
+
 from pyLiveMusic import Client
 
-server = Client(
-    HOST="0.0.0.0",
-    PORT=5000,
-    AUTH_KEY="124",
-)
 
-server.start() 
+async def main():
+    client = Client()
+    try:
+        await client.start()
+    finally:
+        await client.stop()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
 ```
