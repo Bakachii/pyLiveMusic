@@ -4,7 +4,7 @@ Test: End Room
 
 This example shows how to:
 
-1. Enable the Python player functions.
+1. Enable the player functions.
 2. Start pyLiveMusic.
 3. Get the initialized Room instance.
 4. Create a room.
@@ -41,7 +41,7 @@ async def main():
 
         # Get the already-initialized Room instance.
         room = client.get(Room)
-
+ 
         # Create a room.
         room_data = await room.create(
             name="Lo-fi",

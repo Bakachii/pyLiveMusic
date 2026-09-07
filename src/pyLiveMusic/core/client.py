@@ -36,7 +36,7 @@ class Client:
 
         set_client(self)
 
-
+ 
     def _initialize_players(self):
         """
         Initialize all pyLiveMusic player classes.

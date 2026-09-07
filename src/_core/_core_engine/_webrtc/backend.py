@@ -467,7 +467,7 @@ class RoomManager:
         documents = await self.repository.list()
 
         for document in documents:
-            room_id = document["_id"]
+            room_id = document["_id"] 
 
             if room_id in self.rooms:
                 continue
@@ -495,9 +495,11 @@ class RoomManager:
         controllers,
         room_id=None,
     ):
-        # Generate an ID if the user didn't provide one
-        room_id = room_id or uuid.uuid4().hex[:12]
+        # Generate an ID only when no room_id was provided.
+        if room_id is None:
+            room_id = uuid.uuid4().hex[:12]
 
+            
         # Don't allow duplicate active rooms
         if room_id in self.rooms:
             raise ValueError(

@@ -12,18 +12,20 @@ async def create_room(request):
         "Private Room",
     )
 
+    room_id = data.get("room_id")
+
     rooms = request.app["state"].rooms
 
     room = await rooms.create(
         name=name,
         controllers={user_id},
+        room_id=room_id,
     )
 
     return web.json_response(
         room.state(),
         status=201,
     )
-
 
 async def get_room(request):
     room_id = request.match_info["room_id"]

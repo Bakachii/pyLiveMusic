@@ -3,7 +3,7 @@ Test: Room Creation
 -------------------
 
 This test demonstrates how to create a room using
-the Python player functions.
+the player functions.
 
 To use classes such as Room, enable player functions:
 
@@ -55,7 +55,7 @@ async def main():
         # room_id:
         #     Optional. Use this when you want your
         #     own unique room ID.
-        data = await room.create(
+        data = await room.create( 
             name="Lo-fi",
             room_id="hello",
         )

@@ -4,7 +4,7 @@ Test: Get Room
 
 This example shows how to:
 
-1. Enable the Python player functions.
+1. Enable the player functions.
 2. Start pyLiveMusic.
 3. Get the initialized Room instance.
 4. Create a room.

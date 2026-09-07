@@ -13,10 +13,10 @@ class Room:
         name: str = "Private Room",
         room_id: str | None = None,
     ):
-        data = {"name": name}
- 
-        if room_id is not None:
-            data["room_id"] = room_id
+        data = {
+            "name": name,
+            "room_id": room_id,
+        }
 
         response = await self.client.http.post(
             rooms.create_room,
@@ -24,6 +24,7 @@ class Room:
         )
 
         response.raise_for_status()
+
         data = await response.json()
         self.room_id = data["room_id"]
 
