@@ -5,13 +5,7 @@ from _utils._settings import QUALITY_BITRATES
 
 
 class Peer:
-
-    def __init__(
-        self,
-        relay: MediaRelay,
-        audio_track,
-        quality: str = "high",
-    ):
+    def __init__(self, relay, audio_track, quality="high", on_close=None):
 
         self.connection = RTCPeerConnection()
         print("[WEBRTC] Creating peer")
@@ -23,11 +17,17 @@ class Peer:
         print("[WEBRTC] Audio track added")
 
         self.quality = quality
-
+        self._on_close = on_close
+        self._closed = False
 
         @self.connection.on("connectionstatechange")
         async def connection_state():
             print("[WEBRTC] Connection state:", self.connection.connectionState)
+
+            if self.connection.connectionState in ("closed", "failed"):
+                if self._on_close and not self._closed:
+                    self._closed = True
+                    await self._on_close(self)
 
         @self.connection.on("iceconnectionstatechange")
         async def ice_state():
@@ -53,4 +53,5 @@ class Peer:
         await self.sender.setParameters(parameters)
 
     async def close(self):
+        self._closed = True
         await self.connection.close()

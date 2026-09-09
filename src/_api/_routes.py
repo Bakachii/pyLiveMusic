@@ -4,6 +4,7 @@ class frontend:
 
     static = "/static/"
     room = "/room/{room_id}"
+    embed = "/room/embed/{room_id}" 
 
 
 BASE_API_ROUTE = "/api/rooms/"
@@ -12,6 +13,8 @@ class rooms:
     create_room = "/api/rooms"
     get_room = BASE_API_ROUTE + "{room_id}"
     end_room = BASE_API_ROUTE + "{room_id}/end"
+    embed_code = BASE_API_ROUTE + "{room_id}/embed"
+
 
 class playback:
     pause = BASE_API_ROUTE + "{room_id}/pause"

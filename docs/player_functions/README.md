@@ -49,6 +49,7 @@ Handles room lifecycle.
 | `create()` | `name="Private Room"`, `room_id=None` | Creates a room and returns its data. An optional `room_id` lets you choose the ID. |
 | `get()` | `room_id` | Retrieves a room by ID. |
 | `end()` | `room_id` | Ends a room and returns the server response. |
+| `get_embed()` | `room_id` | Returns a ready-to-use iframe embed snippet. |
 
 ```python
 room = client.get(Room)

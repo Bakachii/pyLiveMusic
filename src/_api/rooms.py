@@ -37,6 +37,22 @@ async def get_room(request):
     return web.json_response(room.state())
 
 
+async def get_embed(request):
+    room_id = request.match_info["room_id"]
+    room = request.app["state"].rooms.get(room_id)
+
+    if room is None:
+        raise web.HTTPNotFound(text="ROOM_NOT_FOUND")
+
+    embed_url = f"/embed/{room_id}"
+
+    return web.json_response({
+        "embed_url": embed_url,
+        "iframe": f'<iframe src="{embed_url}" width="320" height="50" '
+                  f'frameborder="0" allow="autoplay"></iframe>',
+    })
+
+
 async def end_room(request):
     
     request.app["auth"]._verify(request)

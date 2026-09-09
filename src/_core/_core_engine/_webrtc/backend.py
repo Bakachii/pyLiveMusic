@@ -328,6 +328,7 @@ class Room:
             self.relay,
             self.audio,
             self.quality,
+            on_close=self.remove_peer,
         )
         self.peers.add(peer)
 
@@ -359,7 +360,7 @@ class Room:
         return {
             "room_id": self.id,
             "name": self.name,
-
+            "participants": len(self.peers),
             "playing": self.playing,
 
             "position": (

@@ -27,7 +27,7 @@ async def main():
         added = await queue.add_track(
             room_id=data['room_id'],
             title="Audio Title",
-            path="/path/to/audio.mp3",
+            path="/home/bakachii/stuffs/codes/python/pyLiveMusic/audio2.mp3",
         )
 
         print("ADDED TRACK:")
