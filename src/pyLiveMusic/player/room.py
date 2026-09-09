@@ -42,3 +42,9 @@ class Room:
 
         response.raise_for_status()
         return await response.json()
+
+    async def get_embed(self, room_id: str):
+        response = await self.client.http.get(BASE_API_ROUTE + f"{room_id}/embed")
+        
+        response.raise_for_status()
+        return await response.json()

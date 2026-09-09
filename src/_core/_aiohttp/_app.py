@@ -9,6 +9,7 @@ from _api._routes import (
 )
 from _api.rooms import (
     create_room,
+    get_embed,
     end_room,
     get_room,
 )
@@ -73,12 +74,14 @@ def create_app(auth, state):
     # Frontend
     app.router.add_get(frontend.home, lambda request: web.FileResponse(STATIC_DIR / "audio.html"))
     app.router.add_get(frontend.room, lambda request:web.FileResponse(STATIC_DIR / "audio.html"))
+    app.router.add_get(frontend.embed, lambda request: web.FileResponse(STATIC_DIR / "embed.html"))
 
     app.router.add_static(frontend.static, STATIC_DIR)
 
     # Rooms
     app.router.add_get(rooms.get_room, get_room)
     app.router.add_post(rooms.end_room, end_room)
+    app.router.add_get(rooms.embed_code, get_embed) 
     app.router.add_post(rooms.create_room, create_room)
 
     # Playback 

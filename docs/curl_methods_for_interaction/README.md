@@ -41,6 +41,7 @@ Example response:
 {
   "room_id": "bdf36a19a0a9",
   "name": "My Room",
+  "participants": 0,
   "playing": false,
   "position": 0.0,
   "duration": 0.0,
@@ -450,6 +451,7 @@ http://localhost:8000/room/$ROOM_ID
 | ------ | ---------------------------------------------- | -------------- |
 | `POST` | `/api/rooms`                                   | Yes            |
 | `GET`  | `/api/rooms/{room_id}`                         | No             |
+| `GET`  | `/api/rooms/{room_id}/embed`                   | No             |
 | `POST` | `/api/rooms/{room_id}/end`                     | Yes            |
 | `GET`  | `/api/rooms/{room_id}/queue`                   | No             |
 | `POST` | `/api/rooms/{room_id}/queue/add`               | Yes            |
@@ -467,5 +469,42 @@ http://localhost:8000/room/$ROOM_ID
 | `POST` | `/api/rooms/{room_id}/seek/back`               | Yes            |
 | `POST` | `/api/rooms/{room_id}/quality`                 | Yes            |
 | `POST` | `/api/rooms/{room_id}/webrtc/offer`            | No*            |
+| `GET`  | `/room/embed/{room_id}`                        | No*            |
 
 * WebRTC signaling is normally handled by the browser or client rather than manually through `curl`.
+
+
+# 11. Embedding
+
+## Get embed code
+
+Returns a ready-to-use iframe snippet for a room.
+
+```bash
+curl http://localhost:8000/api/rooms/$ROOM_ID/embed
+```
+
+Example response:
+
+```json
+{
+  "embed_url": "/embed/bdf36a19a0a9",
+  "iframe": "<iframe src=\"/embed/bdf36a19a0a9\" width=\"320\" height=\"50\" frameborder=\"0\" allow=\"autoplay\"></iframe>"
+}
+```
+
+## Embed page
+
+A compact, chrome-free player page meant for embedding on third-party sites via `<iframe>`.
+
+```text
+http://localhost:8000/embed/$ROOM_ID
+```
+
+```html
+<iframe src="http://localhost:8000/embed/ROOM_ID" width="320" height="50" frameborder="0" allow="autoplay"></iframe>
+```
+
+> The `allow="autoplay"` attribute lets the browser autoplay where permitted; otherwise the player shows a click-to-start prompt, same as the regular room page.
+
+---
