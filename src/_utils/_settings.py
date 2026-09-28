@@ -8,12 +8,10 @@ QUALITY_BITRATES = {
     "peak": 320_000,
 }
 
-
 SAMPLE_RATE = 48_000
 
 # 20 ms of audio at 48 kHz.
 FRAME_SAMPLES = 960
-
 
 # Room is deleted 60 seconds after its queue becomes empty.
 ROOM_DELETE_DELAY = 60

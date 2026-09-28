@@ -2,20 +2,18 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 0.0.9   | :white_check_mark: |
+| 0.0.x  | :x:                |
+
+```NOTE : do not use version below 0.0.9, any of the features will not work properly```
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+- Just create an issue when you find bugs, issues, optimisation of code and new ideas with appropriate tag
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+- Refrain from creating useless pull request if you have not created an issue before about it.
+
+- Fixing issues might take a while and i will be active in the discussion.
+
