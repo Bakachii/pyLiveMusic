@@ -3,11 +3,11 @@ import asyncio
 
 import aiohttp
 
-from pyLiveMusic.storage.memory import Memory
-
 from _core._aiohttp._app import _start
 from _core._core_func._context import set_client
 from _core._core_func._auth._auth import Authentication
+
+from pyLiveMusic.storage.memory import Memory
 
 
 class Client:
