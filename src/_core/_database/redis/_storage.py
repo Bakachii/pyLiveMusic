@@ -1,3 +1,5 @@
+from pyLiveMusic._logger import logs
+
 class _RedisStorage:
 
     def __init__(
@@ -24,8 +26,8 @@ class _RedisStorage:
 
     async def connect(self):
         await self.client.ping()
-        print("Redis connected")
+        logs.info("Redis connected")
 
     async def close(self):
         await self.client.aclose()
-        print("Redis disconnected")
+        logs.info("Redis disconnected")

@@ -4,10 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.0.9   | :white_check_mark: |
-| 0.0.x  | :x:                |
-
-```NOTE : do not use version below 0.0.9, any of the features will not work properly```
+| 1.0.0   | :white_check_mark: |
+| from 0.0.1 to 0.0.9   | :x:  |
 
 ## Reporting a Vulnerability
 

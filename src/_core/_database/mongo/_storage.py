@@ -1,3 +1,5 @@
+from pyLiveMusic._logger import logs
+
 class _MongoStorage:
     def __init__(
         self,
@@ -22,8 +24,8 @@ class _MongoStorage:
         
     async def connect(self):
         await self.client.admin.command("ping")
-        print("MongoDB connected")
+        logs.info("MongoDB connected")
 
     async def close(self):
         await self.client.close()
-        print("MongoDB disconnected")
+        logs.info("MongoDB disconnected")
