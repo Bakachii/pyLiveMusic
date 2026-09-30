@@ -1,5 +1,7 @@
 from aiohttp import web
 
+from pyLiveMusic._logger import logs
+
 from _api._routes import (
     queue,
     rooms,
@@ -40,10 +42,11 @@ from _core._core_engine._webrtc.signaling import offer
 from _core._core_func._state._data_state import _data_state
 
 
+
 async def on_startup(app):
     state = app["state"]
     
-    print("Starting server...")
+    logs.info("Starting server...")
     
     await state.storage.connect()
     await state.rooms.start()
@@ -52,12 +55,12 @@ async def on_startup(app):
 async def on_shutdown(app):
     state = app["state"]
 
-    print("Shutting down...")
+    logs.info("Shutting down...")
     
     await state.rooms.shutdown()
     await state.storage.close()
     
-    print("Server stopped")
+    logs.info("Server stopped")
 
 
 
@@ -66,7 +69,7 @@ def create_app(auth, state):
     app["auth"] = auth
     app["state"] = state
 
-    print("Auth Key: " + app["auth"]._get_auth_key())
+    logs.info("Auth Key: " + app["auth"]._get_auth_key())
     
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
@@ -128,6 +131,6 @@ async def _start(host, port, auth, storage):
 
     await site.start()
 
-    print(f"Server started on http://{host}:{port}")
+    logs.info(f"Server started on http://{host}:{port}")
 
     return runner

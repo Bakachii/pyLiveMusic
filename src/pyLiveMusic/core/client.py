@@ -6,6 +6,7 @@ import aiohttp
 from _core._aiohttp._app import _start
 from _core._core_func._context import set_client
 from _core._core_func._auth._auth import Authentication
+from pyLiveMusic._logger import logs
 
 from pyLiveMusic.storage.memory import Memory
 
@@ -110,7 +111,7 @@ class Client:
         if self.player_function:
             self._initialize_players()
 
-        print("Server is running.")
+        logs.info("Server is running.")
 
         return self
 

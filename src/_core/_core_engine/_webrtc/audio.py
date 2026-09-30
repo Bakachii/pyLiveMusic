@@ -7,6 +7,7 @@ from collections import deque
 from fractions import Fraction
 
 from aiortc import MediaStreamTrack
+from pyLiveMusic._logger import logs
 
 from _utils._settings import  SAMPLE_RATE, FRAME_SAMPLES
 
@@ -66,7 +67,7 @@ class RoomAudioTrack(MediaStreamTrack):
 
         filename = str(Path(filename).resolve())
         await self.close_file()
-        print(f"[AUDIO] Loading: {filename}")
+        logs.info(f"[AUDIO] Loading: {filename}")
 
         self.container = av.open(filename)
         self.stream = (self.container.streams.audio[0])
@@ -93,7 +94,7 @@ class RoomAudioTrack(MediaStreamTrack):
         self._finished = False
         self._generation += 1
 
-        print(
+        logs.info(
             f"[AUDIO] Duration: "
             f"{self.duration:.3f}s"
         )
@@ -136,7 +137,7 @@ class RoomAudioTrack(MediaStreamTrack):
             self.paused = False
             self._condition.notify_all()
 
-        print(
+        logs.info(
             f"[AUDIO] PLAY "
             f"{self.position:.3f}s"
         )
@@ -151,7 +152,7 @@ class RoomAudioTrack(MediaStreamTrack):
             self.position = self.current_position()
             self.paused = True
 
-        print(
+        logs.info(
             f"[AUDIO] PAUSE "
             f"{self.position:.3f}s"
         )
@@ -199,7 +200,7 @@ class RoomAudioTrack(MediaStreamTrack):
             self._finished = False
             self._condition.notify_all()
 
-        print(
+        logs.info(
             f"[AUDIO] SEEK "
             f"{position:.3f}s"
         )
@@ -296,7 +297,7 @@ class RoomAudioTrack(MediaStreamTrack):
                     if not self._finished:
                         self._finished = True
 
-                        print("[AUDIO] TRACK FINISHED")
+                        logs.info("[AUDIO] TRACK FINISHED")
 
                         # Don't await the room callback
                         # directly inside recv().
@@ -368,7 +369,7 @@ class RoomAudioTrack(MediaStreamTrack):
 
             self.position = self._timestamp / SAMPLE_RATE
 
-            """print(
+            """logs.info(
                 f"[AUDIO] FRAME "
                 f"pts={frame.pts} "
                 f"samples={frame.samples} "

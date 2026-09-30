@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from aiortc import RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
 
+from pyLiveMusic._logger import logs
 from _utils._settings import ROOM_DELETE_DELAY
 
 from .peer import Peer
@@ -482,7 +483,7 @@ class RoomManager:
 
             self.rooms[room_id] = room
 
-        print("Room manager started")
+        logs.info("Room manager started")
 
     async def shutdown(self):
         for room in list(self.rooms.values()):
