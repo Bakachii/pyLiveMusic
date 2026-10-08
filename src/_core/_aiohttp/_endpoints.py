@@ -30,19 +30,8 @@ def route_key(path: str) -> str:
 
 def route_name(prefix: str, path: str) -> str:
     path = path.strip("/").replace("/", "-")
-
-    path = re.sub(
-        r"\{([^{}]+)\}",
-        r"\1",
-        path,
-    )
-
-    path = re.sub(
-        r"[^A-Za-z0-9_.-]",
-        "-",
-        path,
-    )
-
+    path = re.sub(r"\{([^{}]+)\}", r"\1", path)
+    path = re.sub(r"[^A-Za-z0-9_.-]", "-", path)
     path = f"p-{path}" if path else "root"
 
     return f"custom-{prefix}:{path}"
@@ -54,34 +43,41 @@ class _RoomHTMLValidator(HTMLParser):
 
         self.audio_count = 0
         self.audio_id_count = 0
+        self.volume_count = 0
+        self.status_count = 0
 
-    def _check_audio(self, attrs):
+    def _check(self, tag, attrs):
         attributes = {
             name.lower(): value
             for name, value in attrs
         }
 
-        self.audio_count += 1
+        tag = tag.lower()
+        element_id = attributes.get("id")
 
-        if attributes.get("id") == "audio":
-            self.audio_id_count += 1
+        if tag == "audio":
+            self.audio_count += 1
+
+            if element_id == "audio":
+                self.audio_id_count += 1
+
+        if element_id == "volume":
+            self.volume_count += 1
+
+        if element_id == "status":
+            self.status_count += 1
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() == "audio":
-            self._check_audio(attrs)
+        self._check(tag, attrs)
 
     def handle_startendtag(self, tag, attrs):
-        if tag.lower() == "audio":
-            self._check_audio(attrs)
+        self._check(tag, attrs)
 
 
 def validate_room_endpoint(endpoint: Endpoint):
-    html = endpoint.html.read_text(
-        encoding="utf-8"
-    )
+    html = endpoint.html.read_text(encoding="utf-8")
 
     parser = _RoomHTMLValidator()
-
     parser.feed(html)
     parser.close()
 
@@ -94,23 +90,27 @@ def validate_room_endpoint(endpoint: Endpoint):
             '<audio id="audio"> element.'
         )
 
+    if parser.volume_count > 1:
+        raise ValueError(
+            'Custom room HTML must contain at most one '
+            'element with id="volume".'
+        )
+
+    if parser.status_count > 1:
+        raise ValueError(
+            'Custom room HTML must contain at most one '
+            'element with id="status".'
+        )
+
 
 def render_endpoint(endpoint: Endpoint) -> str:
-    html = endpoint.html.read_text(
-        encoding="utf-8"
-    )
+    html = endpoint.html.read_text(encoding="utf-8")
 
     # Custom CSS
 
     if endpoint.css is not None:
-        css = endpoint.css.read_text(
-            encoding="utf-8"
-        )
-
-        css = css.replace(
-            "</style",
-            r"<\/style",
-        )
+        css = endpoint.css.read_text(encoding="utf-8")
+        css = css.replace("</style", r"<\/style")
 
         style = (
             f"<style>\n"
@@ -130,7 +130,14 @@ def render_endpoint(endpoint: Endpoint) -> str:
     # Room helpers
 
     if endpoint.room:
-        room_elements = """
+        parser = _RoomHTMLValidator()
+        parser.feed(html)
+        parser.close()
+
+        room_elements = ""
+
+        if parser.volume_count == 0:
+            room_elements += """
 <label for="volume">Volume</label>
 <input
     id="volume"
@@ -140,6 +147,10 @@ def render_endpoint(endpoint: Endpoint) -> str:
     step="0.01"
     value="1"
 >
+"""
+
+        if parser.status_count == 0:
+            room_elements += """
 <span id="status">CONNECTING...</span>
 """
 
@@ -164,14 +175,8 @@ def render_endpoint(endpoint: Endpoint) -> str:
     # Custom JavaScript
 
     if endpoint.js is not None:
-        js = endpoint.js.read_text(
-            encoding="utf-8"
-        )
-
-        js = js.replace(
-            "</script",
-            r"<\/script",
-        )
+        js = endpoint.js.read_text(encoding="utf-8")
+        js = js.replace("</script", r"<\/script")
 
         script = (
             f"<script>\n"
@@ -210,7 +215,6 @@ async def _asset_handler(request, endpoint):
 
     try:
         path.relative_to(root)
-
     except ValueError:
         raise web.HTTPForbidden()
 
@@ -230,7 +234,6 @@ def register_endpoint(app, endpoint):
                 endpoint.path,
             ),
         )
-
     else:
         app.router.add_get(
             endpoint.path,
