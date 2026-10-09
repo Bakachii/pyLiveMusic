@@ -10,7 +10,11 @@ class MongoRoomRepository:
             "controllers": list(controllers),
         }
 
-        await self.collection.insert_one(document)
+        await self.collection.replace_one(
+            {"_id": room_id},
+            document,
+            upsert=True,
+        )
         return document
 
     async def get(self, room_id):
@@ -40,6 +44,10 @@ class MongoUserRepository:
 
         document = {"_id": user_id, "username": username}
 
-        await self.collection.insert_one(document)
+        await self.collection.replace_one(
+            {"_id": user_id},
+            document,
+            upsert=True,
+        )
 
         return document
