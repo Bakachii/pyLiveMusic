@@ -85,22 +85,32 @@ class Client:
 
         return tuple(instances)
 
-    def add_endpoint(
-        self,
-        path: str,
-        html: str,
-        css: str | None = None,
-        js: str | None = None,
-        root: str | None = None,
-    ):
-        if not path.startswith("/"):
+    # ------------------------------------------------------------------
+    # Endpoints
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_file(
+        value: str | None,
+        label: str,
+        default: Path | None = None,
+    ) -> Path | None:
+        """Absolute path of an existing file (or `default` / None)."""
+        if value is None and default is None:
+            return None
+
+        path = Path(value).resolve() if value is not None else default
+
+        if not path.is_file():
+            raise FileNotFoundError(f"{label} file not found: {path}")
+
+        return path
+
+    def _check_path_available(self, path: str) -> None:
+        """Raises if `path` is invalid, built in, or already registered."""
+        if not isinstance(path, str) or not path.startswith("/"):
             raise ValueError(
                 f"Endpoint path must start with '/': {path}"
-            )
-
-        if path in self._endpoints:
-            raise ValueError(
-                f"Endpoint already exists: {path}"
             )
 
         from _api._routes import (
@@ -152,7 +162,7 @@ class Client:
                     f"Endpoint is already assigned by pyLiveMusic: {path}"
                 )
 
-        if any(
+        if path in self._endpoints or any(
             route_key(route) == normalized
             for route in self._endpoints
         ):
@@ -160,19 +170,56 @@ class Client:
                 f"Endpoint already exists: {path}"
             )
 
-        html_path = Path(html).resolve()
+    def add_endpoint(
+        self,
+        path: str,
+        html: str | None = None,
+        css: str | None = None,
+        js: str | None = None,
+        root: str | None = None,
+        *,
+        get=None,
+        post=None,
+    ):
+        """Register a route.
 
-        css_path = (
-            Path(css).resolve()
-            if css is not None
-            else None
-        )
+        Page endpoint (as before):
+            client.add_endpoint("/home", html="home/index.html",
+                                css="home/style.css", js="home/script.js")
 
-        js_path = (
-            Path(js).resolve()
-            if js is not None
-            else None
-        )
+        API endpoint (no page): pass async handlers instead of html.
+            client.add_endpoint("/botinfo", get=bot_info)
+            client.add_endpoint("/presence/{room}/join", post=join)
+
+        A handler is `async def handler(request) -> aiohttp.web.Response`.
+        `{name}` parts of the path are read with request.match_info["name"].
+        Routes are registered in call order.
+        """
+        if html is None and get is None and post is None:
+            raise ValueError(
+                "add_endpoint needs a page (html=) "
+                "or a handler (get= / post=)."
+            )
+
+        if html is None and any(
+            value is not None for value in (css, js, root)
+        ):
+            raise ValueError(
+                "css=, js= and root= belong to a page: pass html= as well."
+            )
+
+        for name, handler in (("get", get), ("post", post)):
+            if handler is not None and not callable(handler):
+                raise TypeError(
+                    f"{name}= must be an async function taking (request), "
+                    f"got {handler!r}"
+                )
+
+        self._check_path_available(path)
+
+        html_path = self._resolve_file(html, "HTML")
+        css_path = self._resolve_file(css, "CSS")
+        js_path = self._resolve_file(js, "JavaScript")
 
         root_path = (
             Path(root).resolve()
@@ -180,30 +227,28 @@ class Client:
             else None
         )
 
-        if not html_path.is_file():
-            raise FileNotFoundError(
-                f"HTML file not found: {html_path}"
-            )
-
-        if css_path is not None and not css_path.is_file():
-            raise FileNotFoundError(
-                f"CSS file not found: {css_path}"
-            )
-
-        if js_path is not None and not js_path.is_file():
-            raise FileNotFoundError(
-                f"JavaScript file not found: {js_path}"
-            )
-
         self._endpoints[path] = Endpoint(
             path=path,
             html=html_path,
             css=css_path,
             js=js_path,
             root=root_path,
+            get=get,
+            post=post,
         )
 
         return self
+
+    def add_api(self, path: str, *, get=None, post=None):
+        """Shortcut for an endpoint without a page.
+
+            client.add_api("/botinfo", get=bot_info)
+            client.add_api("/presence/{room}/join", post=join)
+        """
+        if get is None and post is None:
+            raise ValueError("add_api needs get= and/or post=.")
+
+        return self.add_endpoint(path, get=get, post=post)
 
     def room_customisation(
         self,
@@ -218,38 +263,14 @@ class Client:
                 "Room endpoint is already customized."
             )
 
-        html_path = (
-            Path(html).resolve()
-            if html is not None
-            else (STATIC_DIR / "audio.html")
+        html_path = self._resolve_file(
+            html,
+            "HTML",
+            default=STATIC_DIR / "audio.html",
         )
 
-        css_path = (
-            Path(css).resolve()
-            if css is not None
-            else None
-        )
-
-        js_path = (
-            Path(js).resolve()
-            if js is not None
-            else None
-        )
-
-        if not html_path.is_file():
-            raise FileNotFoundError(
-                f"HTML file not found: {html_path}"
-            )
-
-        if css_path is not None and not css_path.is_file():
-            raise FileNotFoundError(
-                f"CSS file not found: {css_path}"
-            )
-
-        if js_path is not None and not js_path.is_file():
-            raise FileNotFoundError(
-                f"JavaScript file not found: {js_path}"
-            )
+        css_path = self._resolve_file(css, "CSS")
+        js_path = self._resolve_file(js, "JavaScript")
 
         self._endpoints[frontend.room] = Endpoint(
             path=frontend.room,
