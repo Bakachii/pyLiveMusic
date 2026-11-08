@@ -1,4 +1,6 @@
 import re
+import gzip
+import hashlib
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -196,10 +198,70 @@ def render_endpoint(endpoint: Endpoint) -> str:
     return html
 
 
+_page_cache = {}
+
+
+def _signature(endpoint: Endpoint):
+    parts = []
+
+    for file in (endpoint.html, endpoint.css, endpoint.js):
+        if file is None:
+            continue
+
+        info = file.stat()
+        parts.append((str(file), info.st_mtime_ns, info.st_size))
+
+    return tuple(parts)
+
+
+def _cached_page(endpoint: Endpoint):
+    """Rendered page + its gzip form, rebuilt only when a source file changes.
+
+    The page used to be re-read from disk and sent uncompressed on every
+    request. On a slow or lossy connection (high latency, mobile data) a
+    100+ KB page is the difference between opening in 1 s and in 10 s.
+    """
+    signature = _signature(endpoint)
+    cached = _page_cache.get(endpoint)
+
+    if cached is None or cached["signature"] != signature:
+        body = render_endpoint(endpoint).encode("utf-8")
+
+        cached = {
+            "signature": signature,
+            "body": body,
+            "gzip": gzip.compress(body, compresslevel=9),
+            "etag": '"' + hashlib.sha1(body).hexdigest()[:20] + '"',
+        }
+
+        _page_cache[endpoint] = cached
+
+    return cached
+
+
 async def _html_handler(request, endpoint):
+    page = _cached_page(endpoint)
+
+    headers = {
+        "ETag": page["etag"],
+        "Cache-Control": "no-cache",
+        "Vary": "Accept-Encoding",
+    }
+
+    if request.headers.get("If-None-Match") == page["etag"]:
+        return web.Response(status=304, headers=headers)
+
+    body = page["body"]
+
+    if "gzip" in request.headers.get("Accept-Encoding", "").lower():
+        body = page["gzip"]
+        headers["Content-Encoding"] = "gzip"
+
     return web.Response(
-        text=render_endpoint(endpoint),
+        body=body,
         content_type="text/html",
+        charset="utf-8",
+        headers=headers,
     )
 
 

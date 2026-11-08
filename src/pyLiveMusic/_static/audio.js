@@ -107,6 +107,29 @@ document.addEventListener("click", async () => {
 });
 
 
+// ICE servers come from the server: STUN, plus TURN (short-lived
+// credentials) when configured, for users behind carrier-grade NAT or on
+// networks that block UDP.
+async function loadIceServers() {
+    try {
+        const response = await fetch("/api/webrtc/config", { cache: "no-store" });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (Array.isArray(data.iceServers) && data.iceServers.length) {
+                return data.iceServers;
+            }
+        }
+    } catch { /* use the defaults below */ }
+
+    return [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun.cloudflare.com:3478" }
+    ];
+}
+
+
 async function connectWebRTC() {
     console.log("[WEBRTC] Connecting...");
 
@@ -117,16 +140,7 @@ async function connectWebRTC() {
 
     peerConnection =
         new RTCPeerConnection({
-            iceServers: [
-                {
-                    urls:
-                        "stun:stun.l.google.com:19302"
-                },
-                {
-                    urls:
-                        "stun:stun.cloudflare.com:3478"
-                }
-            ]
+            iceServers: await loadIceServers()
         });
 
 

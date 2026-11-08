@@ -7,10 +7,20 @@ from aiortc import RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
 
 from pyLiveMusic._logger import logs
-from _utils._settings import ROOM_DELETE_DELAY
+from _utils._settings import (
+    DB_TIMEOUT,
+    MAX_QUEUE_LENGTH,
+    MAX_ROOMS,
+    ROOM_DELETE_DELAY,
+    ServerOptions,
+)
 
 from .peer import Peer
 from .audio import RoomAudioTrack
+
+
+class RoomExistsError(ValueError):
+    pass
 
 
 @dataclass
@@ -27,7 +37,9 @@ class Room:
         name,
         controllers,
         on_empty,
+        options=None,
     ):
+        self.options = options or ServerOptions()
         self.id = room_id
         self.name = name
 
@@ -68,6 +80,9 @@ class Room:
 
     async def add_track(self, title, path):
         async with self.lock:
+            if len(self.queue) >= MAX_QUEUE_LENGTH:
+                raise ValueError("QUEUE_FULL")
+
             item = QueueItem(
                 id=uuid.uuid4().hex,
                 title=title,
@@ -78,55 +93,81 @@ class Room:
             self.cancel_delete_timer()
 
             if self.current is None:
-                await self._start_next_locked()
+                dropped = await self._start_next_locked()
+
+                # The file could not be opened: say so instead of leaving a
+                # room that looks alive but never plays.
+                if item in dropped:
+                    raise ValueError("TRACK_UNPLAYABLE")
 
             return item
 
     # Start next track
 
     async def _start_next_locked(self, start=None):
-        if self.ended:
-            return
+        """Loads the next playable track.
 
-        if not self.queue:
-            self.current = None
-            self.playing = False
+        A track that cannot be opened is dropped (and logged) and the next
+        one is tried, so one bad file never leaves the room stuck. Returns
+        the dropped items.
+        """
+        dropped = []
 
-            await self.audio.pause()
-            self.schedule_delete()
+        while True:
+            if self.ended:
+                return dropped
 
-            return
+            if not self.queue:
+                self.current = None
+                self.playing = False
 
-        if self.shuffle:
-            index = random.randrange(
-                len(self.queue)
+                await self.audio.pause()
+                self.schedule_delete()
+
+                return dropped
+
+            if self.shuffle:
+                index = random.randrange(
+                    len(self.queue)
+                )
+
+            elif self.order == "ascending":
+                index = 0
+
+            else:
+                index = len(self.queue) - 1
+
+            item = self.queue.pop(index)
+
+            try:
+                await self.audio.load(item.path)
+
+            except Exception as error:
+                logs.error(
+                    f"[ROOM] {self.id}: cannot play "
+                    f"{item.path!r}: {error}"
+                )
+
+                dropped.append(item)
+                continue
+
+            self.current = item
+
+            self.audio.set_volume(
+                self.volume
             )
 
-        elif self.order == "ascending":
-            index = 0
+            if start is None:
+                start = self.started
 
-        else:
-            index = len(self.queue) - 1
+            if start:
+                await self.audio.play()
+                self.playing = True
 
-        item = self.queue.pop(index)
+            else:
+                self.playing = False
 
-        self.current = item
-
-        await self.audio.load(item.path)
-
-        self.audio.set_volume(
-            self.volume
-        )
-
-        if start is None:
-            start = self.started
-
-        if start:
-            await self.audio.play()
-            self.playing = True
-
-        else:
-            self.playing = False
+            return dropped
 
     # Track finished
 
@@ -142,20 +183,27 @@ class Room:
             if self.repeat_mode == "once":
                 self.repeat_mode = "none"
 
-                await self.audio.load(
-                    finished.path
-                )
+                try:
+                    await self.audio.load(
+                        finished.path
+                    )
 
-                self.audio.set_volume(
-                    self.volume
-                )
+                    self.audio.set_volume(
+                        self.volume
+                    )
 
-                await self.audio.play()
+                    await self.audio.play()
 
-                self.playing = True
-                self.started = True
+                    self.playing = True
+                    self.started = True
 
-                return
+                    return
+
+                except Exception as error:
+                    logs.error(
+                        f"[ROOM] {self.id}: cannot repeat "
+                        f"{finished.path!r}: {error}"
+                    )
 
             # Repeat all
 
@@ -350,14 +398,22 @@ class Room:
 
     # WebRTC peer
 
-    async def add_peer(self, peer_id=None):
+    async def add_peer(self, peer_id=None, remote=None):
+        limit = self.options.max_peers_per_room
+
+        if limit and len(self.peers) >= limit:
+            raise ValueError("ROOM_FULL")
+
         peer = Peer(
             self.relay,
             self.audio,
             self.quality,
             on_close=self.remove_peer,
             on_ready=self._peer_ready,
+            options=self.options,
         )
+
+        peer.remote = remote
 
         peer.id = (
             peer_id
@@ -496,9 +552,13 @@ class Room:
         )
 
     def cancel_delete_timer(self):
-        if self.delete_task:
-            self.delete_task.cancel()
-            self.delete_task = None
+        task, self.delete_task = self.delete_task, None
+
+        # end() runs inside this very task when the timer fires. Cancelling
+        # ourselves would abort the clean-up half way (peers left open, audio
+        # never closed, database record never deleted).
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
 
     async def _delete_after_delay(self):
         try:
@@ -509,12 +569,18 @@ class Room:
         except asyncio.CancelledError:
             return
 
-        if self.queue:
+        if self.queue or self.current is not None or self.ended:
             return
 
-        await self.on_empty(
-            self.id
-        )
+        try:
+            await self.on_empty(
+                self.id
+            )
+
+        except Exception:
+            logs.exception(
+                f"[ROOM] {self.id}: automatic delete failed"
+            )
 
     # End room
 
@@ -525,18 +591,60 @@ class Room:
         self.ended = True
         self.cancel_delete_timer()
 
-        for peer in list(self.peers):
-            await peer.close()
-
+        peers = list(self.peers)
         self.peers.clear()
 
-        await self.audio.close()
+        try:
+            if peers:
+                await asyncio.gather(
+                    *(
+                        asyncio.wait_for(peer.close(), 5)
+                        for peer in peers
+                    ),
+                    return_exceptions=True,
+                )
+
+        finally:
+            try:
+                await self.audio.close()
+
+            except Exception:
+                logs.exception(
+                    f"[ROOM] {self.id}: closing audio failed"
+                )
 
 
 class RoomManager:
     def __init__(self, repository):
         self.rooms = {}
         self.repository = repository
+
+        # Set by the server before it starts.
+        self.options = ServerOptions()
+        self.owner_id = None
+
+    def total_peers(self):
+        return sum(len(room.peers) for room in self.rooms.values())
+
+    def peers_from(self, remote):
+        return sum(
+            1
+            for room in self.rooms.values()
+            for peer in room.peers
+            if getattr(peer, "remote", None) == remote
+        )
+
+    async def _db(self, coroutine, what):
+        """Database calls are best effort: live rooms never wait for, or
+        fail because of, a slow or unreachable database."""
+        try:
+            return await asyncio.wait_for(
+                coroutine,
+                DB_TIMEOUT,
+            )
+
+        except Exception as error:
+            logs.warning(f"[DB] {what} failed: {error!r}")
 
     async def start(self):
         documents = await self.repository.list()
@@ -547,20 +655,41 @@ class RoomManager:
             if room_id in self.rooms:
                 continue
 
+            controllers = document.get(
+                "controllers",
+                [],
+            )
+
+            # Older versions stored the API key itself here. Keep only the
+            # non-secret owner id.
+            if self.owner_id and controllers != [self.owner_id]:
+                controllers = [self.owner_id]
+
+                await self._db(
+                    self.repository.create(
+                        room_id=room_id,
+                        name=document.get("name", "Private Room"),
+                        controllers=controllers,
+                    ),
+                    "scrub room",
+                )
+
             room = Room(
                 room_id,
                 document.get(
                     "name",
                     "Private Room",
                 ),
-                document.get(
-                    "controllers",
-                    [],
-                ),
+                controllers,
                 self.remove,
+                self.options,
             )
 
             self.rooms[room_id] = room
+
+            # Queues are not persisted, so a revived room is empty. Let it
+            # expire like any other idle room instead of living forever.
+            room.schedule_delete()
 
         logs.info(
             "Room manager started"
@@ -570,7 +699,11 @@ class RoomManager:
         for room in list(
             self.rooms.values()
         ):
-            await room.end()
+            try:
+                await room.end()
+
+            except Exception:
+                logs.exception("Room shutdown failed")
 
         self.rooms.clear()
 
@@ -584,34 +717,31 @@ class RoomManager:
             room_id = uuid.uuid4().hex[:12]
 
         if room_id in self.rooms:
-            raise ValueError(
-                f"Room '{room_id}' already exists."
+            raise RoomExistsError(
+                "ROOM_EXISTS"
             )
+
+        if len(self.rooms) >= MAX_ROOMS:
+            raise ValueError("TOO_MANY_ROOMS")
 
         room = Room(
             room_id,
             name,
             controllers,
             self.remove,
+            self.options,
         )
 
         self.rooms[room_id] = room
 
-        try:
-            await self.repository.create(
+        await self._db(
+            self.repository.create(
                 room_id=room_id,
                 name=name,
                 controllers=controllers,
-            )
-
-        except Exception:
-            self.rooms.pop(
-                room_id,
-                None,
-            )
-
-            await room.end()
-            raise
+            ),
+            "save room",
+        )
 
         return room
 
@@ -624,9 +754,14 @@ class RoomManager:
             None,
         )
 
-        if room:
-            await room.end()
+        try:
+            if room:
+                await room.end()
 
-        await self.repository.delete(
-            room_id
-        )
+        finally:
+            await self._db(
+                self.repository.delete(
+                    room_id
+                ),
+                "delete room",
+            )

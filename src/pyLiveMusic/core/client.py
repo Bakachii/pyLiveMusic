@@ -14,7 +14,7 @@ from _core._core_func._context import set_client
 from _core._core_func._auth._auth import Authentication
 from pyLiveMusic._logger import logs
 
-from _utils._settings import STATIC_DIR
+from _utils._settings import STATIC_DIR, ServerOptions
 from pyLiveMusic.storage.memory import Memory
 
 
@@ -27,10 +27,53 @@ class Client:
         AUTH_KEY: str | None = None,
         STORAGE=None,
         player_function: bool = False,
+        *,
+        ICE_SERVERS: list | None = None,
+        TURN_URLS: list | None = None,
+        TURN_SECRET: str | None = None,
+        TURN_USERNAME: str | None = None,
+        TURN_CREDENTIAL: str | None = None,
+        MEDIA_DIRS: list | None = None,
+        MAX_PEERS_PER_ROOM: int = 300,
+        MAX_PEERS_PER_IP: int = 0,
+        TRUST_PROXY: bool = False,
+        ALLOW_PRIVATE_CANDIDATES: bool = False,
     ):
+        """
+        ICE_SERVERS / TURN_*  WebRTC connectivity for browsers. STUN alone
+                              cannot reach users behind carrier-grade NAT or
+                              on UDP-blocking networks; add a TURN server
+                              (TURN_URLS plus TURN_SECRET for coturn's
+                              `use-auth-secret`, or TURN_USERNAME and
+                              TURN_CREDENTIAL).
+        MEDIA_DIRS            only files inside these folders can be queued.
+        MAX_PEERS_PER_IP      0 = unlimited. Set TRUST_PROXY=True when running
+                              behind a reverse proxy so the real client
+                              address (X-Forwarded-For) is used.
+        """
         self.host = HOST
         self.port = PORT
-        self.base_url = f"http://{HOST}:{PORT}"
+
+        # The client talks to its own server: never to "0.0.0.0".
+        local = "127.0.0.1" if HOST in ("0.0.0.0", "", "::") else HOST
+        self.base_url = f"http://{local}:{PORT}"
+
+        self.options = ServerOptions(
+            ice_servers=list(ICE_SERVERS or []),
+            turn_urls=list(TURN_URLS or []),
+            turn_secret=TURN_SECRET,
+            turn_username=TURN_USERNAME,
+            turn_credential=TURN_CREDENTIAL,
+            max_peers_per_room=MAX_PEERS_PER_ROOM,
+            max_peers_per_ip=MAX_PEERS_PER_IP,
+            trust_proxy=TRUST_PROXY,
+            allow_private_candidates=ALLOW_PRIVATE_CANDIDATES,
+            media_dirs=(
+                [Path(folder).resolve() for folder in MEDIA_DIRS]
+                if MEDIA_DIRS
+                else None
+            ),
+        )
 
         self.auth = Authentication(AUTH_KEY)
         self.storage = STORAGE if STORAGE is not None else Memory()
@@ -43,6 +86,11 @@ class Client:
         self._endpoints = {}
 
         set_client(self)
+
+    @property
+    def auth_key(self) -> str:
+        """The API key (useful when it was generated)."""
+        return self.auth._get_auth_key()
 
     def _initialize_players(self):
         from pyLiveMusic.player import (
@@ -116,6 +164,7 @@ class Client:
         from _api._routes import (
             queue,
             rooms,
+            server,
             webrtc,
             frontend,
             playback,
@@ -143,6 +192,8 @@ class Client:
             queue.clear_queue,
             queue.remove_track,
             webrtc.offer,
+            webrtc.config,
+            server.health,
             "/api/rooms/{room_id}/webrtc/candidate",
         )
 
@@ -295,6 +346,9 @@ class Client:
 
         self.http = aiohttp.ClientSession(
             base_url=self.base_url,
+            # A hung server call must fail in seconds, not after aiohttp's
+            # default five minutes (which froze whatever awaited it).
+            timeout=aiohttp.ClientTimeout(total=30, connect=5),
             headers={
                 "Authorization": (
                     f"Bearer {self.auth._get_auth_key()}"
@@ -308,6 +362,7 @@ class Client:
             auth=self.auth,
             storage=self.storage,
             endpoints=self._endpoints,
+            options=self.options,
         )
 
         set_client(self)

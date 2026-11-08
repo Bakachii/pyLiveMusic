@@ -32,3 +32,8 @@ class queue:
 
 class webrtc:
     offer = BASE_API_ROUTE + "{room_id}/webrtc/offer"
+    config = "/api/webrtc/config"
+
+
+class server:
+    health = "/api/health"

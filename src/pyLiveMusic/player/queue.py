@@ -15,7 +15,7 @@ class Queue:
         return await response.json()
 
     async def clear_queue(self, room_id: str):
-        response = await self.client.http.delete(BASE_API_ROUTE + f"{room_id}/queue/clear")
+        response = await self.client.http.post(BASE_API_ROUTE + f"{room_id}/queue/clear")
 
         response.raise_for_status()
         return await response.json()
@@ -41,7 +41,7 @@ class Queue:
         room_id: str,
         track_id: str,
     ):
-        response = await self.client.http.delete(BASE_API_ROUTE + f"{room_id}/queue/{track_id}/remove")
+        response = await self.client.http.post(BASE_API_ROUTE + f"{room_id}/queue/{track_id}/remove")
 
         response.raise_for_status()
         return await response.json()
