@@ -37,10 +37,8 @@ class Playback:
         return await response.json()
 
     async def mute(self, room_id: str):
-        response = await self.client.http.post(BASE_API_ROUTE + f"{room_id}/mute")
-
-        response.raise_for_status()
-        return await response.json()
+        # There is no /mute endpoint: muting is volume 0.
+        return await self.volume(room_id, 0)
 
     async def shuffle(
         self,

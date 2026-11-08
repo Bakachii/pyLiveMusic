@@ -1,7 +1,7 @@
 from aiohttp import web
 
 
-from _api._errors import json_error
+from _api._errors import json_error, read_json
 
 
 def get_room(request):
@@ -56,7 +56,7 @@ async def volume(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     try:
         await room.set_volume(data["volume"])
@@ -81,7 +81,7 @@ async def shuffle(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     await room.set_shuffle(data.get("enabled", False))
 
@@ -92,7 +92,7 @@ async def repeat(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     try:
         await room.set_repeat(data["mode"])
@@ -143,7 +143,7 @@ async def seek_front(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     try:
         await room.seek_front(data["seconds"])
@@ -168,7 +168,7 @@ async def seek_back(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     try:
         await room.seek_back(data["seconds"])
@@ -192,7 +192,7 @@ async def quality(request):
 
     request.app["auth"]._verify(request)
     room = get_room(request)
-    data = await request.json()
+    data = await read_json(request)
 
     try:
         await room.set_quality(data["quality"])

@@ -50,4 +50,5 @@ if __name__ == '__main__':
 # Documentation
 
 - [cURL API reference](docs/curl_methods_for_interaction/README.md) — for HTTP endpoint.
+- [WebRTC connectivity](docs/webrtc_connectivity/README.md) — TURN setup for users who connect slowly or not at all.
 - [Player functions](docs/player_functions/README.md) — the optional Python `Room` / `Queue` / `Playback` API.

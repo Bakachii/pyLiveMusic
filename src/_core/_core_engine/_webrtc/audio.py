@@ -7,9 +7,14 @@ from collections import deque
 from fractions import Fraction
 
 from aiortc import MediaStreamTrack
+from aiortc.mediastreams import MediaStreamError
 from pyLiveMusic._logger import logs
 
-from _utils._settings import  SAMPLE_RATE, FRAME_SAMPLES
+from _utils._settings import (
+    SAMPLE_RATE,
+    FRAME_SAMPLES,
+    LAG_RESYNC_SECONDS,
+)
 
 
 TIME_BASE = Fraction(1, SAMPLE_RATE)
@@ -69,8 +74,15 @@ class RoomAudioTrack(MediaStreamTrack):
         await self.close_file()
         logs.info(f"[AUDIO] Loading: {filename}")
 
-        self.container = av.open(filename)
-        self.stream = (self.container.streams.audio[0])
+        # Opening a file probes it on disk: do that in a thread so a slow
+        # disk or a big file cannot freeze the whole server.
+        container, stream = await asyncio.to_thread(
+            self._open_container,
+            filename,
+        )
+
+        self.container = container
+        self.stream = stream
 
         self.decoder = (self.container.decode(self.stream))
         self.resampler = av.AudioResampler(
@@ -102,6 +114,19 @@ class RoomAudioTrack(MediaStreamTrack):
         if self.position > 0:
             self._seek_decoder(self.position)
 
+
+    @staticmethod
+    def _open_container(filename):
+        container = av.open(filename)
+
+        try:
+            stream = container.streams.audio[0]
+
+        except IndexError:
+            container.close()
+            raise ValueError("NO_AUDIO_STREAM")
+
+        return container, stream
 
     # Get duration
 
@@ -278,11 +303,17 @@ class RoomAudioTrack(MediaStreamTrack):
 
         while True:
 
+            if self.readyState != "live":
+                raise MediaStreamError
+
             # Pause handling
 
             async with self._condition:
                 while self.paused:
                     await self._condition.wait()
+
+                    if self.readyState != "live":
+                        raise MediaStreamError
 
             # Make sure we have audio
 
@@ -352,6 +383,13 @@ class RoomAudioTrack(MediaStreamTrack):
 
             if delay > 0:
                 await asyncio.sleep(delay)
+
+            elif delay < -LAG_RESYNC_SECONDS:
+                # Nobody was pulling frames (no listener connected, or the
+                # server was stalled). Returning the backlog as fast as the
+                # CPU allows made late joiners hear the song fast-forward and
+                # starved the event loop. Carry on in real time from here.
+                self._start_time -= delay
 
             
             # Apply room volume
@@ -449,3 +487,7 @@ class RoomAudioTrack(MediaStreamTrack):
             self._finish_task.cancel()
 
         self.stop()
+
+        # Wake a recv() that is waiting on pause so it can end.
+        async with self._condition:
+            self._condition.notify_all()

@@ -1,26 +1,52 @@
 from aiohttp import web
 
+from _api._errors import read_json
+from _core._core_engine._webrtc.backend import RoomExistsError
+from _utils._settings import MAX_ROOM_NAME, ROOM_ID_PATTERN
+
 
 async def create_room(request):
     request.app["auth"]._verify(request)
-    user_id = request.app["auth"]._get_auth_key()
 
-    data = await request.json()
+    # The room records a fingerprint of the key, never the key itself.
+    owner_id = request.app["auth"].owner_id
+
+    data = await read_json(request)
 
     name = data.get(
         "name",
         "Private Room",
     )
 
+    if (
+        not isinstance(name, str)
+        or not name.strip()
+        or len(name) > MAX_ROOM_NAME
+    ):
+        raise web.HTTPBadRequest(text="INVALID_ROOM_NAME")
+
     room_id = data.get("room_id")
+
+    if room_id is not None and (
+        not isinstance(room_id, str)
+        or not ROOM_ID_PATTERN.match(room_id)
+    ):
+        raise web.HTTPBadRequest(text="INVALID_ROOM_ID")
 
     rooms = request.app["state"].rooms
 
-    room = await rooms.create(
-        name=name,
-        controllers={user_id},
-        room_id=room_id,
-    )
+    try:
+        room = await rooms.create(
+            name=name.strip(),
+            controllers={owner_id},
+            room_id=room_id,
+        )
+
+    except RoomExistsError:
+        raise web.HTTPConflict(text="ROOM_EXISTS")
+
+    except ValueError as error:
+        raise web.HTTPServiceUnavailable(text=str(error))
 
     return web.json_response(
         room.state(),
@@ -39,7 +65,7 @@ async def get_room(request):
 
 
 async def end_room(request):
-    
+
     request.app["auth"]._verify(request)
 
     room_id = request.match_info["room_id"]

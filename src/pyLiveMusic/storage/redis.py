@@ -17,5 +17,5 @@ class Redis:
         self.db_url = db_url or "redis://localhost:6379"
         self.db = db or 0
         self.key_prefix = key_prefix or "pylivemusic"
-        self.users = f"{key_prefix}:users"
-        self.rooms = f"{key_prefix}:rooms"
+        self.users = f"{self.key_prefix}:users"
+        self.rooms = f"{self.key_prefix}:rooms"
